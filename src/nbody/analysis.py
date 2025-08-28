@@ -21,16 +21,10 @@ def osculating_elements(state, body_idx: int, central_idx: int, G: float):
     q = a * (1 - e) if np.isfinite(a) else np.nan
     return {"a": a, "e": e, "q": q, "r": r}
 
-def run_mercury_analysis(sim: NBodySimulation, n_frames: int, intruder_frames: tuple[int,int], G: float):
+def run_mercury_analysis(sim: NBodySimulation, n_frames: int, G: float):
     data = {k: [] for k in ['t_days','r','a','e','q','x','y','energy_error','momentum_error']}
-    activate_frame, deactivate_frame = intruder_frames
 
     for frame in range(n_frames):
-        if frame == activate_frame:
-            sim.set_intruder_trajectory(True)
-        elif frame == deactivate_frame:
-            sim.set_intruder_trajectory(False)
-
         sim.run_frame(sim.cfg.simulation.steps_per_frame)
 
         el = osculating_elements(sim.state, 1, 0, G)

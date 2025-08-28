@@ -2,10 +2,10 @@ import copy
 import numpy as np
 from .physics import compute_acceleration_softened
 
-def velocity_verlet_step(state, dt: float, epsilon: float):
+def velocity_verlet_step(state, dt: float, epsilon: float, intruder_idx=None, ramp_func=None, time: float = 0.0):
     n = len(state)
     next_state = copy.deepcopy(state)
-    a_now = [compute_acceleration_softened(i, state, epsilon) for i in range(n)]
+    a_now = [compute_acceleration_softened(i, state, epsilon, intruder_idx, ramp_func, time) for i in range(n)]
 
     for i in range(n):
         ax, ay, az = a_now[i]
@@ -14,7 +14,7 @@ def velocity_verlet_step(state, dt: float, epsilon: float):
         next_state[i][1] += vy*dt + 0.5*ay*dt*dt
         next_state[i][2] += vz*dt + 0.5*az*dt*dt
 
-    a_new = [compute_acceleration_softened(i, next_state, epsilon) for i in range(n)]
+    a_new = [compute_acceleration_softened(i, next_state, epsilon, intruder_idx, ramp_func, time + dt) for i in range(n)]
 
     for i in range(n):
         ax_old, ay_old, az_old = a_now[i]
@@ -25,12 +25,11 @@ def velocity_verlet_step(state, dt: float, epsilon: float):
 
     return next_state
 
-def adaptive_timestep(state, eta: float, dt_min: float, dt_max: float, epsilon: float):
-    from .physics import compute_acceleration_softened
+def adaptive_timestep(state, eta: float, dt_min: float, dt_max: float, epsilon: float, intruder_idx=None, ramp_func=None, time: float = 0.0):
     dt_candidates = []
     n = len(state)
     for i in range(n):
-        ax, ay, az = compute_acceleration_softened(i, state, epsilon)
+        ax, ay, az = compute_acceleration_softened(i, state, epsilon, intruder_idx, ramp_func, time)
         a_mag = (ax*ax + ay*ay + az*az) ** 0.5
         if a_mag > 1e-20:
             r_min = float('inf')

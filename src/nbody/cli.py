@@ -21,20 +21,14 @@ def main():
 
     # 1) Baseline analysis
     log.info("Running BASELINE scenario...")
-    sim_baseline = NBodySimulation(cfg)
-    sim_baseline.set_intruder_trajectory(False)
+    sim_baseline = NBodySimulation(cfg, intruder_on=False)
     n_frames = args.frames or cfg.simulation.max_frames
-    baseline = run_mercury_analysis(sim_baseline, n_frames, (10_000, 10_000), G)
+    baseline = run_mercury_analysis(sim_baseline, n_frames, G)
 
     # 2) Perturbed analysis
     log.info("Running PERTURBED scenario...")
-    sim_perturbed = NBodySimulation(cfg)
-    perturbed = run_mercury_analysis(
-        sim_perturbed,
-        n_frames,
-        (cfg.simulation.intruder_activate_frame, cfg.simulation.intruder_deactivate_frame),
-        G
-    )
+    sim_perturbed = NBodySimulation(cfg, intruder_on=True)
+    perturbed = run_mercury_analysis(sim_perturbed, n_frames, G)
 
     # 3) Plots
     log.info("Generating diagnostic plots...")

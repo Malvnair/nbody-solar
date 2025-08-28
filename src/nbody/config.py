@@ -16,8 +16,6 @@ class SimulationCfg:
     max_trail_length: int
     num_background_stars: int
     intruder_trail_n: int
-    intruder_activate_frame: int
-    intruder_deactivate_frame: int
 
 @dataclass
 class IntegrationCfg:

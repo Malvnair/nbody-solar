@@ -1,0 +1,3 @@
+# N-Body Solar System (Config-Driven)
+
+Velocity Verlet + adaptive timestep...

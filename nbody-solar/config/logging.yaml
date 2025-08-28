@@ -2,3 +2,23 @@ version: 1
 formatters:
   simple:
     format: "[%(levelname)s] %(message)s"
+  rich:
+    format: "%(asctime)s | %(levelname)s | %(name)s | %(message)s"
+    datefmt: "%H:%M:%S"
+
+handlers:
+  console:
+    class: logging.StreamHandler
+    level: INFO
+    formatter: simple
+    stream: ext://sys.stdout
+
+loggers:
+  nbody:
+    level: INFO
+    handlers: [console]
+    propagate: no
+
+root:
+  level: WARNING
+  handlers: [console]

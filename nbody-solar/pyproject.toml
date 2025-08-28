@@ -1,3 +1,19 @@
 [project]
 name = "nbody-solar"
 version = "0.1.0"
+description = "Solar System N-Body (Velocity Verlet + adaptive dt) with intruder flyby"
+readme = "README.md"
+requires-python = ">=3.9"
+authors = [{name="Malavika Nair"}]
+
+dependencies = [
+  "numpy>=1.24",
+  "matplotlib>=3.7",
+  "pyyaml>=6.0",
+]
+
+[project.scripts]
+nbody = "nbody.cli:main"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

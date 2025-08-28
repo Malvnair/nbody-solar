@@ -45,6 +45,15 @@ class VizCfg:
 class IntruderCfg:
     approach_state: List[float]   # [x,y,z,vx,vy,vz]
     parked_state: List[float]
+    ramp: 'RampCfg'
+
+@dataclass
+class RampCfg:
+    mode: str = "none"
+    t0: float = 0.0
+    tau: float = 1.0
+    r0: float = 0.0
+    dr: float = 1.0
 
 @dataclass
 class AppConfig:
@@ -75,12 +84,31 @@ def load_config(cfg_path: Path, logging_path: Path | None = None) -> AppConfig:
     except (KeyError, TypeError, ValueError):
         pass
 
+    # PyYAML 6+ parses some scientific notation values (e.g. 1e6) as strings.
+    # Convert any such strings to floats for numeric fields that expect lists
+    # of numbers.
+    try:
+        raw["integration"]["epsilon_soft"] = float(raw["integration"]["epsilon_soft"])
+    except (KeyError, ValueError, TypeError):
+        pass
+    try:
+        raw_intr = raw["intruder"]
+        raw_intr["approach_state"] = [float(x) for x in raw_intr["approach_state"]]
+        raw_intr["parked_state"] = [float(x) for x in raw_intr["parked_state"]]
+        raw_intr["ramp"] = {k: float(v) if k not in ("mode",) else v for k, v in raw_intr.get("ramp", {}).items()}
+    except (KeyError, TypeError, ValueError):
+        pass
+
     appcfg = AppConfig(
         simulation=SimulationCfg(**raw["simulation"]),
         integration=IntegrationCfg(**raw["integration"]),
         diagnostics=DiagnosticsCfg(**raw["diagnostics"]),
         viz=VizCfg(**raw["viz"]),
-        intruder=IntruderCfg(**raw["intruder"]),
+        intruder=IntruderCfg(
+            approach_state=raw["intruder"]["approach_state"],
+            parked_state=raw["intruder"]["parked_state"],
+            ramp=RampCfg(**raw["intruder"].get("ramp", {})),
+        ),
     )
     log.info("Loaded config from %s", cfg_path)
     return appcfg

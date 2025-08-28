@@ -56,20 +56,6 @@ def create_animation(sim: NBodySimulation):
     def animate(frame):
         nonlocal scatters_3d, scatters_2d, text_labels
 
-        if frame == sim.cfg.simulation.intruder_activate_frame:
-            sim.set_intruder_trajectory(True)
-            if len(lines_3d) > sim.intruder_idx:
-                lines_3d[sim.intruder_idx].set_data([], []); lines_3d[sim.intruder_idx].set_3d_properties([])
-            if len(lines_2d) > 5:
-                lines_2d[5].set_data([], [])
-
-        elif frame == sim.cfg.simulation.intruder_deactivate_frame:
-            sim.set_intruder_trajectory(False)
-            if len(lines_3d) > sim.intruder_idx:
-                lines_3d[sim.intruder_idx].set_data([], []); lines_3d[sim.intruder_idx].set_3d_properties([])
-            if len(lines_2d) > 5:
-                lines_2d[5].set_data([], [])
-
         sim.run_frame(sim.cfg.simulation.steps_per_frame)
 
         ax.view_init(30 + 10*np.sin(frame*0.01), -45 - frame*0.2)
@@ -81,10 +67,7 @@ def create_animation(sim: NBodySimulation):
         years = (sim.time / 86400) / 365.25
         title = (f"Solar System N-Body (VV + Adaptive dt) | "
                  f"t={years:.2f} y | zoom={zoom/AU:.1f} AU | fps={fps:.1f} | dt={sim.dt_current:.1f}s")
-        if sim.intruder_approaching and (cfg.simulation.intruder_activate_frame <= frame < cfg.simulation.intruder_deactivate_frame):
-            ax.set_title(title + " | INTRUDER ACTIVE!", color='yellow', fontsize=14, pad=20)
-        else:
-            ax.set_title(title, color='white', fontsize=14, pad=20)
+        ax.set_title(title, color='white', fontsize=14, pad=20)
 
         for e in scatters_3d + scatters_2d + text_labels:
             e.remove()

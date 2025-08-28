@@ -10,7 +10,7 @@ from .initial_conditions import get_initial_state
 log = logging.getLogger(__name__)
 
 class NBodySimulation:
-    def __init__(self, cfg: AppConfig):
+    def __init__(self, cfg: AppConfig, intruder_on: bool = True):
         self.cfg = cfg
         self.state = get_initial_state()
         self.n_bodies = len(self.state)
@@ -20,17 +20,26 @@ class NBodySimulation:
 
         # Intruder
         self.intruder_idx = 9
+        self.intruder_base_mass = self.state[self.intruder_idx][6]
         self.intruder_active_flag = True
-        self.intruder_approaching = False
+        self.intruder_approaching = intruder_on
+
+        # Trails
+        self.position_history = [[] for _ in range(self.n_bodies)]
+        self.max_history = cfg.simulation.max_trail_length
+
+        # Set intruder state
+        if intruder_on:
+            self.set_intruder_trajectory(True)
+        else:
+            self.set_intruder_trajectory(False)
+
+        self.state[self.intruder_idx][6] = self.intruder_base_mass * self.intruder_multiplier()
 
         # Baselines
         self.E0 = total_energy(self.state, cfg.integration.epsilon_soft)
         self.P0 = total_momentum(self.state)
         self.L0 = total_angular_momentum(self.state)
-
-        # Trails
-        self.position_history = [[] for _ in range(self.n_bodies)]
-        self.max_history = cfg.simulation.max_trail_length
 
         # Logs
         self.conservation_log = []
@@ -45,14 +54,12 @@ class NBodySimulation:
             self.intruder_approaching = True
             self.position_history[idx].clear()
             self.position_history[idx].append(self.state[idx][:3].copy())
-            log.info("Intruder activated.")
         else:
             vals = self.cfg.intruder.parked_state
             self.state[idx][0:6] = vals[:6]
             self.intruder_approaching = False
             self.position_history[idx].clear()
-            log.info("Intruder parked/deactivated.")
-
+        self.state[idx][6] = self.intruder_base_mass * self.intruder_multiplier()
     # ---- collisions & merging ----
     def _merge_pair(self, keep_idx: int, kill_idx: int):
         bi = self.state[keep_idx]
@@ -105,7 +112,12 @@ class NBodySimulation:
     # ---- integration step ----
     def integrate_step(self):
         I = self.cfg.integration
-        self.dt_current = adaptive_timestep(self.state, I.eta_timestep, I.dt_min, I.dt_max, I.epsilon_soft)
+        mult = self.intruder_multiplier()
+        self.state[self.intruder_idx][6] = self.intruder_base_mass * mult
+        self.dt_current = adaptive_timestep(
+            self.state, I.eta_timestep, I.dt_min, I.dt_max, I.epsilon_soft,
+            intruder_idx=self.intruder_idx, ramp_func=self.intruder_multiplier, time=self.time
+        )
         if not np.isfinite(self.dt_current):
             self.dt_current = I.dt_initial
 
@@ -113,10 +125,16 @@ class NBodySimulation:
 
         prev_state = copy.deepcopy(self.state)
         try:
-            self.state = velocity_verlet_step(self.state, self.dt_current, I.epsilon_soft)
+            self.state = velocity_verlet_step(
+                self.state, self.dt_current, I.epsilon_soft,
+                intruder_idx=self.intruder_idx, ramp_func=self.intruder_multiplier, time=self.time
+            )
         except Exception:
             self.dt_current = max(I.dt_min, 0.5 * self.dt_current)
-            self.state = velocity_verlet_step(prev_state, self.dt_current, I.epsilon_soft)
+            self.state = velocity_verlet_step(
+                prev_state, self.dt_current, I.epsilon_soft,
+                intruder_idx=self.intruder_idx, ramp_func=self.intruder_multiplier, time=self.time
+            )
 
         self.time += self.dt_current
         self.step_count += 1
@@ -157,4 +175,17 @@ class NBodySimulation:
         )
         self.conservation_log.append(diag)
         return diag
+
+    # ---- intruder force ramp ----
+    def intruder_multiplier(self, time=None, state=None):
+        t = self.time if time is None else time
+        st = self.state if state is None else state
+        r_cfg = self.cfg.intruder.ramp
+        if r_cfg.mode == "time":
+            return 1.0 / (1.0 + np.exp(-(t - r_cfg.t0) / r_cfg.tau))
+        elif r_cfg.mode == "distance":
+            r = np.linalg.norm(np.array(st[self.intruder_idx][:3]))
+            return 1.0 / (1.0 + np.exp((r - r_cfg.r0) / r_cfg.dr))
+        else:
+            return 1.0
 

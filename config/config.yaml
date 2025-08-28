@@ -6,8 +6,6 @@ simulation:
   max_trail_length: 365
   num_background_stars: 200
   intruder_trail_n: 120
-  intruder_activate_frame: 200
-  intruder_deactivate_frame: 800
 
 integration:
   epsilon_soft: 1.0e+6
@@ -45,3 +43,7 @@ intruder:
     - -1.0e3
     - -1.0e3
     - -1.0e2
+  ramp:
+    mode: none
+    r0: 1.0e11
+    dr: 5.0e10

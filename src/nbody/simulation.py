@@ -94,6 +94,7 @@ class NBodySimulation:
                     self._merge_pair(keep, kill)
                     collided = True
         return collided
+    
 
     def _shrink_dt_if_close_approach(self):
         factor = self.cfg.integration.close_approach_factor
@@ -175,6 +176,14 @@ class NBodySimulation:
         )
         self.conservation_log.append(diag)
         return diag
+    
+        # simulation.py
+    def pair_weight(self, i, j):
+        # 9 is your intruder index in your script
+        if i == 9 or j == 9:
+            return self.intruder_lambda   # 0→1 during ramp
+        return 1.0
+
 
     # ---- intruder force ramp ----
     def intruder_multiplier(self, time=None, state=None):
@@ -188,4 +197,6 @@ class NBodySimulation:
             return 1.0 / (1.0 + np.exp((r - r_cfg.r0) / r_cfg.dr))
         else:
             return 1.0
+        
+    
 

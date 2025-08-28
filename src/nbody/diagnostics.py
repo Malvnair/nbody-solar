@@ -1,7 +1,7 @@
 import numpy as np
 from .constants import G
 
-def total_energy(state, epsilon_soft: float):
+def total_energy(state, epsilon_soft: float, pair_weight=lambda i,j: 1.0):
     KE = 0.0
     for b in state:
         if b[6] <= 0: continue
@@ -15,8 +15,9 @@ def total_energy(state, epsilon_soft: float):
             if state[j][6] <= 0: continue
             r = np.linalg.norm(np.array(state[i][:3]) - np.array(state[j][:3]))
             if r > epsilon_soft:
+                w = pair_weight(i, j)
                 PE -= G * state[i][6] * state[j][6] / r
-    return KE + PE
+    return KE + PE  
 
 def total_momentum(state):
     P = np.zeros(3)
